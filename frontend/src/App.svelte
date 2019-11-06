@@ -13,40 +13,37 @@ import {
 	Badge
 } from 'sveltestrap';
 
+import { onMount } from "svelte";
+
+let products = [];
+
 let title = "";
+const server = "http://localhost:3001/api/v1"
 
-let products = [
-	{
-		id: 1,
-		status: true,
-		title: 'Procesador Ryzen 5 2400G 3.4MHZ 12MB 8 Threads'
-	},
-	{
-		id: 2,
-		status: false,
-		title: 'Placa mãe AORUS Gigabyte B450M, 7 USB 3.0'
-	},
-	{
-		id: 3,
-		status: true,
-		title: '3 Fan Corsair RGB mais controladora'
-	}		
-];
+onMount(async () => {
+	const response = await (await fetch(`${server}/products`)).json();
+	products = response.products;
+})
 
-function addProduct(ev) {
+async function addProduct(ev) {
 	ev.preventDefault();
-	const product = { id: 4, title: title, status: true };
-	products = [...products, product];
-	clearField();
-}
+	const response = await (await fetch(`${server}/products`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ title })
+	})).json();
 
-function clearField(){
+	products = [ ...products, response.product];
 	title = "";
 }
 
-function stock(p) {
-	p.status = p.status ? false : true;
-	products[products.indexOf(p)] = p;
+async function stock(p) {
+	const response = await(await fetch(`${server}/products`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ id: p.id, status: p.status })		
+	})).json();
+	products[products.indexOf(p)] = response.product;
 }
 </script>
 
@@ -65,7 +62,7 @@ function stock(p) {
 		<Row>
 			<Col sm="12" class="mb-3">
 				<h5 class="text-muted">Em estoque 
-					<Badge color="primary">{ products.length }</Badge>
+					<Badge color="primary">{ products.filter( p => p.status? p : 0).length }</Badge>
 				</h5>
 			</Col>
 		{#each products as product}			
